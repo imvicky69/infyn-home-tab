@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Infyn Home Tab",
+  "version": "1.0.0",
+  "description": "A sleek, productive new tab homescreen dashboard with widgets, quick shortcuts, notes, and search.",
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "action": {
+    "default_title": "Infyn Home Tab"
+  },
+  "icons": {
+    "128": "logo.png"
+  }
+}
