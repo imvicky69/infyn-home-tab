@@ -4,7 +4,6 @@ import {
   X,
   Globe,
   Upload,
-  Image as ImageIcon,
   Sparkles,
   Code,
   Database,
@@ -33,8 +32,12 @@ import {
   Box,
   Lightbulb,
   Settings,
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import type { AppIconItem } from '../types'
+import { AnimatedLogo } from './AnimatedLogo'
 
 interface AppGridProps {
   apps: AppIconItem[]
@@ -100,6 +103,7 @@ export const AppGrid: React.FC<AppGridProps> = ({
   onReorderApps,
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [editingApp, setEditingApp] = useState<AppIconItem | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [newUrl, setNewUrl] = useState('')
   const [iconMode, setIconMode] = useState<'auto' | 'infyn' | 'indivio' | 'lucide' | 'upload'>('auto')
@@ -117,6 +121,8 @@ export const AppGrid: React.FC<AppGridProps> = ({
   const [dragOverAppId, setDragOverAppId] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const touchStartX = useRef<number | null>(null)
+  const touchStartY = useRef<number | null>(null)
 
   const itemsPerPage = 16
   const totalPages = Math.max(1, Math.ceil(apps.length / itemsPerPage))
@@ -169,7 +175,41 @@ export const AppGrid: React.FC<AppGridProps> = ({
     }
   }
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleOpenAdd = () => {
+    setEditingApp(null)
+    setNewTitle('')
+    setNewUrl('')
+    setUploadedImage('')
+    setFaviconPreview('')
+    setIconMode('auto')
+    setIsAddModalOpen(true)
+  }
+
+  const handleOpenEdit = (app: AppIconItem) => {
+    setEditingApp(app)
+    setNewTitle(app.title)
+    setNewUrl(app.url)
+    if (app.iconType === 'infyn-badge' || app.iconType === 'indivio-badge') {
+      setIconMode('infyn')
+    } else if (app.iconType === 'upload') {
+      setIconMode('upload')
+      setUploadedImage(app.iconValue)
+    } else if (app.iconType === 'preset') {
+      setIconMode('lucide')
+      setSelectedLucide(app.iconValue)
+    } else {
+      setIconMode('auto')
+      setFaviconPreview(app.iconValue)
+    }
+    if (app.cornerBadge) setSelectedCornerBadge(app.cornerBadge)
+    if (app.bgColor) {
+      setSelectedBadgeColor(app.bgColor)
+      setSelectedBgColor(app.bgColor)
+    }
+    setIsAddModalOpen(true)
+  }
+
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newTitle.trim() || !newUrl.trim()) return
 
@@ -180,47 +220,55 @@ export const AppGrid: React.FC<AppGridProps> = ({
 
     const domain = getDomain(formattedUrl)
 
+    let appData: Omit<AppIconItem, 'id' | 'clicks'> = {
+      title: newTitle.trim(),
+      url: formattedUrl,
+      iconType: 'favicon',
+      iconValue: domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : '',
+      bgColor: 'bg-white text-slate-900',
+    }
+
     if (iconMode === 'infyn' || iconMode === 'indivio') {
-      onAddApp({
+      appData = {
         title: newTitle.trim(),
         url: formattedUrl,
         iconType: 'infyn-badge',
         iconValue: '/logo.png',
         cornerBadge: selectedCornerBadge,
         bgColor: selectedBadgeColor,
-        clicks: 0,
-      })
+      }
     } else if (iconMode === 'upload' && uploadedImage) {
-      onAddApp({
+      appData = {
         title: newTitle.trim(),
         url: formattedUrl,
         iconType: 'upload',
         iconValue: uploadedImage,
         bgColor: 'bg-white text-slate-900',
-        clicks: 0,
-      })
+      }
     } else if (iconMode === 'lucide') {
-      onAddApp({
+      appData = {
         title: newTitle.trim(),
         url: formattedUrl,
         iconType: 'preset',
         iconValue: selectedLucide,
         bgColor: selectedBgColor,
-        clicks: 0,
+      }
+    }
+
+    if (editingApp && onUpdateApp) {
+      onUpdateApp({
+        ...editingApp,
+        ...appData,
       })
     } else {
-      const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : ''
       onAddApp({
-        title: newTitle.trim(),
-        url: formattedUrl,
-        iconType: 'favicon',
-        iconValue: faviconUrl,
-        bgColor: 'bg-white text-slate-900',
+        ...appData,
         clicks: 0,
       })
     }
 
     // Reset Form
+    setEditingApp(null)
     setNewTitle('')
     setNewUrl('')
     setUploadedImage('')
@@ -236,6 +284,29 @@ export const AppGrid: React.FC<AppGridProps> = ({
         clicks: (app.clicks || 0) + 1,
       })
     }
+  }
+
+  // Touch swipe gesture for pagination
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return
+    const diffX = touchStartX.current - e.changedTouches[0].clientX
+    const diffY = touchStartY.current - e.changedTouches[0].clientY
+
+    // Dominant horizontal swipe
+    if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.4) {
+      if (diffX > 0 && currentPage < totalPages - 1) {
+        setCurrentPage((prev) => prev + 1)
+      } else if (diffX < 0 && currentPage > 0) {
+        setCurrentPage((prev) => prev - 1)
+      }
+    }
+    touchStartX.current = null
+    touchStartY.current = null
   }
 
   // Drag and Drop Reordering Handlers
@@ -294,11 +365,7 @@ export const AppGrid: React.FC<AppGridProps> = ({
     if (app.iconType === 'infyn-badge' || app.iconType === 'indivio-badge' || app.cornerBadge) {
       return (
         <div className="relative w-full h-full flex items-center justify-center">
-          <img
-            src="/logo.png"
-            alt="Infyn Logo"
-            className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
-          />
+          <AnimatedLogo variant="hero" width={28} className="text-slate-900" />
           {app.cornerBadge && (
             <div className={`absolute -bottom-1 -right-1 p-0.5 rounded-full ${app.bgColor || 'bg-indigo-600 text-white'} border border-slate-900 shadow-md flex items-center justify-center`}>
               {renderCornerBadgeIcon(app.cornerBadge)}
@@ -396,9 +463,13 @@ export const AppGrid: React.FC<AppGridProps> = ({
   }
 
   return (
-    <div className="flex flex-col items-center w-full">
-      {/* 4x4 Draggable Reorderable Grid */}
-      <div className="grid grid-cols-4 gap-y-4 gap-x-5 sm:gap-y-6 sm:gap-x-7 sm:p-2">
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="flex flex-col items-center w-full touch-pan-y"
+    >
+      {/* 4x4 Draggable Reorderable Grid with fixed top-aligned height */}
+      <div className="grid grid-cols-4 content-start items-start justify-items-center gap-y-3.5 gap-x-4 sm:gap-y-5 sm:gap-x-6 p-1 min-h-[350px] sm:min-h-[380px] w-full">
         {visibleApps.map((app) => {
           const isDragging = draggedAppId === app.id
           const isDragOver = dragOverAppId === app.id
@@ -413,7 +484,7 @@ export const AppGrid: React.FC<AppGridProps> = ({
               onDragEnd={handleDragEnd}
               className={`group relative flex flex-col items-center select-none cursor-grab active:cursor-grabbing transition-all duration-200 ${
                 isDragging ? 'opacity-40 scale-95' : ''
-              } ${isDragOver ? 'scale-110 ring-2 ring-indigo-400 rounded-3xl' : ''}`}
+              } ${isDragOver ? 'scale-110 ring-2 ring-white/60 rounded-3xl' : ''}`}
             >
               <a
                 href={app.url}
@@ -431,18 +502,33 @@ export const AppGrid: React.FC<AppGridProps> = ({
                 {app.title}
               </span>
 
-              {/* Delete button on hover */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  onRemoveApp(app.id)
-                }}
-                className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-slate-900/90 text-slate-400 hover:text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md z-10"
-                title={`Remove ${app.title}`}
-              >
-                <X className="h-3 w-3" />
-              </button>
+              {/* Action buttons on hover */}
+              <div className="absolute -top-1.5 -right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleOpenEdit(app)
+                  }}
+                  className="h-5 w-5 rounded-full bg-slate-900/95 text-slate-300 hover:text-black hover:bg-white border border-white/20 flex items-center justify-center shadow-md transition-all hover:scale-110"
+                  title={`Edit ${app.title}`}
+                >
+                  <Pencil className="h-2.5 w-2.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onRemoveApp(app.id)
+                  }}
+                  className="h-5 w-5 rounded-full bg-slate-900/95 text-slate-300 hover:text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center shadow-md transition-all hover:scale-110"
+                  title={`Remove ${app.title}`}
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </div>
             </div>
           )
         })}
@@ -450,7 +536,7 @@ export const AppGrid: React.FC<AppGridProps> = ({
         {/* Add Live Site Button */}
         <div className="flex flex-col items-center select-none">
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={handleOpenAdd}
             className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-black/30 hover:bg-black/50 border border-dashed border-white/30 hover:border-white/60 text-white/80 hover:text-white flex items-center justify-center shadow-md backdrop-blur-xl transition-all duration-300 hover:scale-105"
             title="Add Favorite Site"
           >
@@ -462,18 +548,42 @@ export const AppGrid: React.FC<AppGridProps> = ({
         </div>
       </div>
 
-      {/* Pagination Dots */}
+      {/* Pagination Controls with Arrow Navigators */}
       {totalPages > 1 && (
-        <div className="flex items-center gap-1.5 mt-4">
-          {Array.from({ length: totalPages }).map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentPage(idx)}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                currentPage === idx ? 'w-5 bg-white' : 'w-2 bg-white/40 hover:bg-white/60'
-              }`}
-            />
-          ))}
+        <div className="flex items-center gap-2 mt-4 select-none">
+          <button
+            type="button"
+            onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
+            className="p-1 rounded-full text-white/50 hover:text-white disabled:opacity-20 transition-all hover:bg-white/10"
+            title="Previous Page"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: totalPages }).map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setCurrentPage(idx)}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  currentPage === idx ? 'w-5 bg-white' : 'w-2 bg-white/40 hover:bg-white/60'
+                }`}
+                title={`Page ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={currentPage === totalPages - 1}
+            className="p-1 rounded-full text-white/50 hover:text-white disabled:opacity-20 transition-all hover:bg-white/10"
+            title="Next Page"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
 
@@ -482,19 +592,24 @@ export const AppGrid: React.FC<AppGridProps> = ({
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-slate-900 border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-white max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm font-bold flex items-center gap-2 text-white">
-                <Globe className="h-4 w-4 text-indigo-400" />
-                Add Live Favorite Site
-              </h3>
+              <div className="flex items-center gap-2">
+                {editingApp ? <Pencil className="h-4 w-4 text-white" /> : <Globe className="h-4 w-4 text-white" />}
+                <h3 className="text-sm font-bold text-white">
+                  {editingApp ? 'Edit Favorite Site' : 'Add Live Favorite Site'}
+                </h3>
+              </div>
               <button
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={() => {
+                  setEditingApp(null)
+                  setIsAddModalOpen(false)
+                }}
                 className="text-slate-400 hover:text-white p-1 rounded-lg"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAdd} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-4">
               {/* Site URL Input */}
               <div>
                 <label className="text-xs text-slate-300 font-semibold block mb-1">
@@ -506,16 +621,17 @@ export const AppGrid: React.FC<AppGridProps> = ({
                     required
                     value={newUrl}
                     onChange={(e) => setNewUrl(e.target.value)}
-                    placeholder="e.g. https://supabase.com"
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl pl-3 pr-9 py-2 text-sm text-white placeholder-slate-500 focus:outline-none"
+                    placeholder="e.g. github.com or https://..."
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-white/40 rounded-xl pl-3 pr-9 py-2 text-sm text-white placeholder-slate-500 focus:outline-none"
+                    autoFocus
                   />
                   {faviconPreview && (
-                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded overflow-hidden flex items-center justify-center bg-white">
+                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md overflow-hidden bg-white/10 flex items-center justify-center pointer-events-none">
                       <img
                         src={faviconPreview}
                         alt="favicon"
-                        onError={() => setFaviconError(true)}
                         className="w-4 h-4 object-contain"
+                        onError={() => setFaviconError(true)}
                       />
                     </div>
                   )}
@@ -524,29 +640,31 @@ export const AppGrid: React.FC<AppGridProps> = ({
 
               {/* Site Name Input */}
               <div>
-                <label className="text-xs text-slate-300 font-semibold block mb-1">
-                  Display Name <span className="text-rose-400">*</span>
+                <label className="text-xs text-slate-400 block mb-1 font-medium">
+                  Display Title <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. Supabase"
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none"
+                  placeholder="e.g. GitHub"
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-white/40 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none"
                 />
               </div>
 
               {/* Icon Mode Switcher Tabs */}
-              <div className="space-y-2 pt-1 border-t border-white/10">
-                <label className="text-xs text-slate-300 font-semibold block">Icon Customization</label>
-                <div className="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-slate-950 border border-white/10 text-[11px]">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1.5 font-medium">
+                  Icon Style
+                </label>
+                <div className="grid grid-cols-4 gap-1 bg-slate-950 p-1 rounded-2xl border border-white/10 text-xs">
                   <button
                     type="button"
                     onClick={() => setIconMode('auto')}
                     className={`py-1.5 px-1 rounded-xl font-semibold flex items-center justify-center gap-1 transition-all ${
                       iconMode === 'auto'
-                        ? 'bg-indigo-600 text-white shadow-xs'
+                        ? 'bg-white text-black font-bold shadow-xs'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -559,11 +677,11 @@ export const AppGrid: React.FC<AppGridProps> = ({
                     onClick={() => setIconMode('infyn')}
                     className={`py-1.5 px-1 rounded-xl font-semibold flex items-center justify-center gap-1 transition-all ${
                       iconMode === 'infyn' || iconMode === 'indivio'
-                        ? 'bg-indigo-600 text-white shadow-xs'
+                        ? 'bg-white text-black font-bold shadow-xs'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    <img src="/logo.png" alt="logo" className="h-3 w-3 object-contain" />
+                    <AnimatedLogo variant="default" width={14} className="text-current" />
                     <span>Logo +</span>
                   </button>
 
@@ -572,7 +690,7 @@ export const AppGrid: React.FC<AppGridProps> = ({
                     onClick={() => setIconMode('lucide')}
                     className={`py-1.5 px-1 rounded-xl font-semibold flex items-center justify-center gap-1 transition-all ${
                       iconMode === 'lucide'
-                        ? 'bg-indigo-600 text-white shadow-xs'
+                        ? 'bg-white text-black font-bold shadow-xs'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -585,7 +703,7 @@ export const AppGrid: React.FC<AppGridProps> = ({
                     onClick={() => setIconMode('upload')}
                     className={`py-1.5 px-1 rounded-xl font-semibold flex items-center justify-center gap-1 transition-all ${
                       iconMode === 'upload'
-                        ? 'bg-indigo-600 text-white shadow-xs'
+                        ? 'bg-white text-black font-bold shadow-xs'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -627,7 +745,7 @@ export const AppGrid: React.FC<AppGridProps> = ({
                   {/* Live Badge Preview */}
                   <div className="p-3 rounded-2xl bg-slate-950/60 border border-white/10 flex items-center gap-3">
                     <div className="relative w-12 h-12 rounded-2xl bg-white flex items-center justify-center p-2 shadow-md shrink-0">
-                      <img src="/logo.png" alt="Infyn Logo" className="w-8 h-8 object-contain" />
+                      <AnimatedLogo variant="hero" width={32} className="text-slate-900" />
                       <div className={`absolute -bottom-1 -right-1 p-0.5 rounded-full ${selectedBadgeColor} border border-slate-900 shadow-md`}>
                         {renderCornerBadgeIcon(selectedCornerBadge)}
                       </div>
@@ -636,7 +754,7 @@ export const AppGrid: React.FC<AppGridProps> = ({
                       <h4 className="text-xs font-bold text-white">
                         Infyn Badge Icon
                       </h4>
-                      <p className="text-[11px] text-indigo-300 font-medium">
+                      <p className="text-[11px] text-white/80 font-medium">
                         Corner Badge: {selectedCornerBadge}
                       </p>
                     </div>
@@ -657,7 +775,7 @@ export const AppGrid: React.FC<AppGridProps> = ({
                             onClick={() => setSelectedCornerBadge(item.name)}
                             className={`p-2 rounded-xl flex items-center justify-center transition-all ${
                               selectedCornerBadge === item.name
-                                ? 'bg-indigo-600 text-white ring-2 ring-indigo-400'
+                                ? 'bg-white text-black ring-2 ring-white/60'
                                 : 'text-slate-400 hover:bg-white/10 hover:text-white'
                             }`}
                             title={item.name}
@@ -712,7 +830,7 @@ export const AppGrid: React.FC<AppGridProps> = ({
                             onClick={() => setSelectedLucide(item.name)}
                             className={`p-2 rounded-xl flex items-center justify-center transition-all ${
                               selectedLucide === item.name
-                                ? 'bg-indigo-600 text-white ring-2 ring-indigo-400'
+                                ? 'bg-white text-black ring-2 ring-white/60'
                                 : 'text-slate-400 hover:bg-white/10 hover:text-white'
                             }`}
                           >
@@ -759,7 +877,7 @@ export const AppGrid: React.FC<AppGridProps> = ({
                   />
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-white/20 hover:border-indigo-400 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-white/5"
+                    className="border-2 border-dashed border-white/20 hover:border-white/60 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-white/5"
                   >
                     {uploadedImage ? (
                       <div className="flex items-center gap-3">
@@ -768,15 +886,18 @@ export const AppGrid: React.FC<AppGridProps> = ({
                           alt="Uploaded"
                           className="w-10 h-10 object-contain rounded-xl shadow-md"
                         />
-                        <span className="text-xs text-indigo-300 font-semibold">
+                        <span className="text-xs text-white/80 font-semibold">
                           Click to change image
                         </span>
                       </div>
                     ) : (
                       <>
-                        <ImageIcon className="h-7 w-7 text-slate-400" />
-                        <span className="text-xs text-slate-300 font-medium text-center">
-                          Click to browse image from computer (PNG, SVG, JPG)
+                        <Upload className="h-6 w-6 text-white/40" />
+                        <span className="text-xs text-white/80 font-semibold">
+                          Upload Custom Favicon / App Icon
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          PNG, JPG, SVG, WebP up to 2MB
                         </span>
                       </>
                     )}
@@ -795,9 +916,9 @@ export const AppGrid: React.FC<AppGridProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all hover:scale-102"
+                  className="px-5 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold shadow-lg shadow-black/40 transition-all hover:scale-102"
                 >
-                  Save to Live Sites
+                  {editingApp ? 'Save Changes' : 'Save to Live Sites'}
                 </button>
               </div>
             </form>

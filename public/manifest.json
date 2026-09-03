@@ -7,10 +7,14 @@
     "newtab": "index.html"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "alarms"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
-    "default_title": "Infyn Home Tab"
+    "default_title": "Infyn Home Tab • Click to Start Focus Timer"
   },
   "icons": {
     "128": "logo.png"

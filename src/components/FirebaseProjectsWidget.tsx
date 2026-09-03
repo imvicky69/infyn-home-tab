@@ -7,7 +7,6 @@ import {
   Globe,
   Code,
   Settings,
-  Shield,
   Plus,
   Trash2,
   ExternalLink,
@@ -15,7 +14,7 @@ import {
   Copy,
   Check,
   X,
-  Zap,
+  FileText,
 } from 'lucide-react'
 import type { FirebaseProject } from '../types'
 
@@ -30,9 +29,7 @@ export const FirebaseProjectsWidget: React.FC<FirebaseProjectsWidgetProps> = ({
   onAddProject,
   onRemoveProject,
 }) => {
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(
-    projects[0]?.id || ''
-  )
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [newProjectId, setNewProjectId] = useState('')
@@ -41,7 +38,6 @@ export const FirebaseProjectsWidget: React.FC<FirebaseProjectsWidgetProps> = ({
 
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -52,22 +48,20 @@ export const FirebaseProjectsWidget: React.FC<FirebaseProjectsWidgetProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Auto-sync selectedProjectId if current active project was removed
-  const activeProject =
-    projects.find((p) => p.id === selectedProjectId) || projects[0] || null
+  const activeProject = projects.find((p) => p.id === selectedProjectId) || projects[0] || null
+  const currentProjectId = activeProject?.projectId || ''
+  const currentProjectName = activeProject?.name || ''
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault()
-    const trimmedId = newProjectId.trim()
+    const trimmedId = newProjectId.trim().toLowerCase().replace(/\s+/g, '-')
     if (!trimmedId) return
 
-    const newId = Date.now().toString()
     onAddProject({
       name: newProjectName.trim() || trimmedId,
       projectId: trimmedId,
     })
 
-    setSelectedProjectId(newId)
     setNewProjectId('')
     setNewProjectName('')
     setIsAddModalOpen(false)
@@ -78,10 +72,7 @@ export const FirebaseProjectsWidget: React.FC<FirebaseProjectsWidgetProps> = ({
       e.preventDefault()
       e.stopPropagation()
     }
-
     onRemoveProject(id)
-
-    // Select remaining project
     const remaining = projects.filter((p) => p.id !== id)
     if (remaining.length > 0) {
       setSelectedProjectId(remaining[0].id)
@@ -92,281 +83,280 @@ export const FirebaseProjectsWidget: React.FC<FirebaseProjectsWidgetProps> = ({
 
   const handleCopyId = () => {
     if (!activeProject) return
-    navigator.clipboard.writeText(activeProject.projectId)
+    navigator.clipboard.writeText(currentProjectId)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const getFirebaseLinks = (projectId: string) => [
+  const getLaunchShortcuts = (projectId: string) => [
     {
       id: 'auth',
       name: 'Auth',
-      fullName: 'Authentication',
-      desc: 'Users & Providers',
+      desc: 'Users & providers',
       icon: Users,
-      color: 'text-amber-400 bg-amber-500/15 border-amber-500/30 hover:bg-amber-500/30',
       url: `https://console.firebase.google.com/project/${projectId}/authentication/users`,
+      badge: 'Users',
     },
     {
       id: 'firestore',
       name: 'Firestore',
-      fullName: 'Cloud Firestore',
-      desc: 'Collections & Documents',
+      desc: 'Collections & data',
       icon: Database,
-      color: 'text-orange-400 bg-orange-500/15 border-orange-500/30 hover:bg-orange-500/30',
       url: `https://console.firebase.google.com/project/${projectId}/firestore/data`,
+      badge: 'Data',
     },
     {
       id: 'storage',
       name: 'Storage',
-      fullName: 'Cloud Storage',
-      desc: 'Buckets & Media files',
+      desc: 'Buckets & media',
       icon: HardDrive,
-      color: 'text-yellow-400 bg-yellow-500/15 border-yellow-500/30 hover:bg-yellow-500/30',
       url: `https://console.firebase.google.com/project/${projectId}/storage`,
+      badge: 'Media',
     },
     {
       id: 'hosting',
       name: 'Hosting',
-      fullName: 'Firebase Hosting',
-      desc: 'Web Domains & Deploys',
+      desc: 'Deploys & domains',
       icon: Globe,
-      color: 'text-sky-400 bg-sky-500/15 border-sky-500/30 hover:bg-sky-500/30',
       url: `https://console.firebase.google.com/project/${projectId}/hosting`,
+      badge: 'Domains',
     },
     {
       id: 'functions',
       name: 'Functions',
-      fullName: 'Cloud Functions',
-      desc: 'Serverless backend & logs',
+      desc: 'Cloud serverless',
       icon: Code,
-      color: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30 hover:bg-emerald-500/30',
       url: `https://console.firebase.google.com/project/${projectId}/functions`,
-    },
-    {
-      id: 'realtime',
-      name: 'Realtime DB',
-      fullName: 'Realtime Database',
-      desc: 'JSON Tree & WebSocket',
-      icon: Zap,
-      color: 'text-amber-300 bg-amber-400/15 border-amber-400/30 hover:bg-amber-400/30',
-      url: `https://console.firebase.google.com/project/${projectId}/database`,
-    },
-    {
-      id: 'appcheck',
-      name: 'App Check',
-      fullName: 'App Check & Rules',
-      desc: 'Security tokens & rules',
-      icon: Shield,
-      color: 'text-indigo-400 bg-indigo-500/15 border-indigo-500/30 hover:bg-indigo-500/30',
-      url: `https://console.firebase.google.com/project/${projectId}/appcheck`,
+      badge: 'API',
     },
     {
       id: 'settings',
       name: 'Settings',
-      fullName: 'Project Settings',
-      desc: 'Web API Keys & Config',
+      desc: 'Keys & project config',
       icon: Settings,
-      color: 'text-slate-200 bg-white/10 border-white/20 hover:bg-white/20',
       url: `https://console.firebase.google.com/project/${projectId}/settings/general`,
+      badge: 'Config',
     },
   ]
 
   return (
-    <div className="w-full">
-      {/* Firebase Developer Command Center Box */}
-      <div className="w-full rounded-3xl bg-slate-900/60 hover:bg-slate-900/75 border border-amber-500/35 hover:border-amber-500/55 backdrop-blur-2xl p-4 text-white shadow-2xl shadow-black/40 transition-all duration-300 relative group">
-        {/* Top Header: Project Selector & Actions */}
-        <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-white/10">
-          <div className="flex items-center gap-2 relative" ref={dropdownRef}>
-            <div className="p-1.5 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-slate-950 shadow-md shadow-amber-500/30">
-              <Flame className="h-4 w-4" />
-            </div>
-
-            {/* Project Switcher Dropdown */}
-            {projects.length > 0 ? (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-1.5 text-left text-xs font-bold text-white hover:text-amber-300 transition-colors bg-white/10 hover:bg-white/15 px-2.5 py-1 rounded-xl border border-white/15"
-                >
-                  <span className="truncate max-w-[130px]">
-                    {activeProject?.name || 'Select Project'}
-                  </span>
-                  <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
-                </button>
-
-                {/* Dropdown Menu */}
-                {isDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-1.5 w-64 bg-slate-900/98 border border-amber-500/40 rounded-2xl p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95">
-                    <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Firebase Projects ({projects.length})
-                    </div>
-
-                    <div className="max-h-48 overflow-y-auto space-y-1 my-1 pr-1">
-                      {projects.map((proj) => (
-                        <div
-                          key={proj.id}
-                          onClick={() => {
-                            setSelectedProjectId(proj.id)
-                            setIsDropdownOpen(false)
-                          }}
-                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs cursor-pointer transition-colors group/item ${
-                            activeProject?.id === proj.id
-                              ? 'bg-amber-500/25 text-amber-300 font-bold'
-                              : 'text-slate-300 hover:bg-white/10 hover:text-white'
-                          }`}
-                        >
-                          <div className="truncate pr-2">
-                            <p className="truncate font-semibold">{proj.name}</p>
-                            <p className="text-[9px] text-slate-400 font-mono truncate">
-                              {proj.projectId}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-1 shrink-0">
-                            {activeProject?.id === proj.id && (
-                              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mr-1" />
-                            )}
-                            {/* Delete button right inside dropdown item */}
-                            <button
-                              type="button"
-                              onClick={(e) => handleDelete(proj.id, e)}
-                              className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-all opacity-70 group-hover/item:opacity-100"
-                              title={`Delete ${proj.name}`}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDropdownOpen(false)
-                        setIsAddModalOpen(true)
-                      }}
-                      className="w-full mt-1 pt-1.5 border-t border-white/10 text-left px-2.5 py-1.5 text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1.5 rounded-lg hover:bg-amber-500/10 transition-colors"
-                    >
-                      <Plus className="h-3 w-3" />
-                      Add Another Project
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <span className="text-xs font-bold text-slate-200">Firebase Hub</span>
-            )}
+    <div className="flex flex-col h-full bg-black/35 hover:bg-black/45 border border-white/10 hover:border-white/20 rounded-3xl p-5 backdrop-blur-xl shadow-xl transition-all text-white w-full">
+      {/* Header Bar with Project Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-white/10 border border-white/15 text-white shadow-xs">
+            <Flame className="h-4 w-4" />
           </div>
-
-          {/* Quick Action Buttons */}
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setIsAddModalOpen(true)}
-              className="p-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/40 transition-all"
-              title="Add New Firebase Project"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-
-            {activeProject && (
-              <button
-                type="button"
-                onClick={() => handleDelete(activeProject.id)}
-                className="p-1.5 rounded-xl bg-white/5 hover:bg-rose-500/25 text-slate-400 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-all"
-                title={`Delete ${activeProject.name}`}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            )}
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-white tracking-tight">Firebase Projects</h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-white/80">
+                {projects.length} Connected
+              </span>
+            </div>
+            <p className="text-[11px] text-white/60">Launch Firestore, Auth, Storage & cloud consoles</p>
           </div>
         </div>
 
-        {/* Project ID Bar */}
-        {activeProject ? (
-          <>
-            <div className="flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5 mb-3 text-[11px]">
-              <div className="flex items-center gap-1.5 truncate">
-                <span className="text-[10px] text-slate-400 font-mono">ID:</span>
-                <span className="font-mono text-amber-300 font-semibold truncate">
-                  {activeProject.projectId}
-                </span>
+        {/* Project Switcher & Add Button */}
+        <div className="flex items-center gap-2">
+          {projects.length > 0 && (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-black/45 hover:bg-black/60 border border-white/15 text-xs text-white font-medium transition-all"
+              >
+                <Flame className="h-3 w-3 text-white/70" />
+                <span className="max-w-[130px] truncate">{activeProject?.name}</span>
+                <ChevronDown className={`h-3 w-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-60 bg-neutral-950/95 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl py-1 z-30 animate-in fade-in">
+                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-white/50 border-b border-white/10">
+                    Switch Project
+                  </div>
+                  <div className="max-h-48 overflow-y-auto py-1">
+                    {projects.map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedProjectId(p.id)
+                          setIsDropdownOpen(false)
+                        }}
+                        className={`flex items-center justify-between px-3 py-2 text-xs cursor-pointer transition-colors ${
+                          activeProject?.id === p.id
+                            ? 'bg-white/15 text-white font-bold'
+                            : 'text-white/70 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <div className="truncate">
+                          <span className="block truncate">{p.name}</span>
+                          <span className="text-[10px] text-white/40 block font-mono">{p.projectId}</span>
+                        </div>
+                        {projects.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleDelete(p.id, e)}
+                            className="p-1 rounded-lg text-white/40 hover:text-rose-400 hover:bg-white/10"
+                            title="Remove project"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
+            className="p-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-white shadow-xs transition-all hover:scale-105"
+            title="Add Firebase Project"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Active Project Banner & Quick Actions */}
+      {activeProject ? (
+        <div className="space-y-4 flex-1 flex flex-col justify-between">
+          <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="p-2 rounded-xl bg-white/10 border border-white/15 text-white shrink-0">
+                <Flame className="h-4 w-4" />
               </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://console.firebase.google.com/project/${currentProjectId}/overview`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs sm:text-sm font-bold text-white hover:underline truncate flex items-center gap-1.5"
+                  >
+                    <span>{currentProjectName}</span>
+                    <ExternalLink className="h-3 w-3 text-white/50 shrink-0" />
+                  </a>
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/10 border border-white/15 text-white/70 shrink-0">
+                    Console
+                  </span>
+                </div>
+                <p className="text-[11px] text-white/60 font-mono truncate mt-0.5">ID: {currentProjectId}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={handleCopyId}
-                className="flex items-center gap-1 text-[10px] font-semibold text-slate-300 hover:text-white transition-colors ml-2 shrink-0"
+                className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] text-white flex items-center gap-1.5 transition-colors"
                 title="Copy Project ID"
               >
-                {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                {copied ? 'Copied' : 'Copy'}
+                {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 text-white/60" />}
+                <span>{copied ? 'Copied' : 'Copy ID'}</span>
               </button>
             </div>
+          </div>
 
-            {/* 8 Developer Action Launch Buttons Grid */}
-            <div className="grid grid-cols-4 gap-2">
-              {getFirebaseLinks(activeProject.projectId).map((link) => {
-                const Icon = link.icon
-                return (
-                  <a
-                    key={link.id}
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`group/btn flex flex-col items-center justify-center p-2 rounded-2xl border ${link.color} transition-all duration-200 hover:scale-105 hover:-translate-y-0.5 shadow-sm text-center select-none`}
-                    title={`${link.fullName} • ${link.desc}`}
-                  >
-                    <Icon className="h-4 w-4 mb-1 transition-transform duration-200 group-hover/btn:scale-110" />
-                    <span className="text-[10px] font-bold tracking-tight truncate w-full">
-                      {link.name}
+          {/* Quick Launcher Grid (Auth, Firestore, Storage, Hosting, Functions, Settings) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {getLaunchShortcuts(currentProjectId).map((item) => {
+              const Icon = item.icon
+
+              return (
+                <a
+                  key={item.id}
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group p-3 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/10 hover:border-white/30 text-white transition-all flex flex-col justify-between h-20 shadow-xs"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="p-1.5 rounded-xl bg-white/10 border border-white/15 text-white group-hover:scale-105 transition-transform">
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-white/50 group-hover:text-white/80 transition-colors">
+                      {item.badge}
                     </span>
-                  </a>
-                )
-              })}
-            </div>
+                  </div>
 
-            {/* Bottom Direct Console Link */}
+                  <div>
+                    <span className="text-xs font-bold block truncate group-hover:translate-x-0.5 transition-transform">
+                      {item.name}
+                    </span>
+                    <span className="text-[10px] text-white/50 block truncate">{item.desc}</span>
+                  </div>
+                </a>
+              )
+            })}
+          </div>
+
+          {/* Bottom Profile Links Bar */}
+          <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
             <a
-              href={`https://console.firebase.google.com/project/${activeProject.projectId}/overview`}
+              href="https://console.firebase.google.com"
               target="_blank"
               rel="noreferrer"
-              className="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/25 transition-all hover:scale-101"
+              className="hover:text-white flex items-center gap-1.5 transition-colors"
             >
-              <span>Open Firebase Console</span>
               <ExternalLink className="h-3 w-3" />
+              <span>console.firebase.google.com</span>
             </a>
-          </>
-        ) : (
-          <div className="text-center py-6">
-            <p className="text-xs text-slate-300 mb-2">No Firebase projects connected.</p>
-            <button
-              type="button"
-              onClick={() => setIsAddModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold shadow-md hover:scale-105 transition-all"
-            >
-              + Add Your First Project
-            </button>
+
+            <div className="flex items-center gap-3">
+              <a
+                href="https://firebase.google.com/docs"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-white flex items-center gap-1 transition-colors"
+              >
+                <FileText className="h-3 w-3" />
+                <span>Documentation</span>
+              </a>
+              <a
+                href={`https://console.firebase.google.com/project/${currentProjectId}/overview`}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                Overview
+              </a>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="p-8 text-center text-xs text-white/50 border border-dashed border-white/15 rounded-2xl flex flex-col items-center gap-3">
+          <Flame className="h-8 w-8 text-white/30" />
+          <p>No Firebase projects connected yet. Add your main project to get quick 1-click cloud launchers.</p>
+          <button
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black font-bold text-xs shadow-md transition-all"
+          >
+            Add Project
+          </button>
+        </div>
+      )}
 
       {/* Add Project Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-white">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold flex items-center gap-2 text-white">
-                <Flame className="h-4 w-4 text-amber-400" />
-                Add Firebase Project
-              </h3>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-neutral-950 border border-white/20 rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl text-white space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Flame className="h-5 w-5" />
+                <h4 className="text-sm font-bold">Add Firebase Project</h4>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="p-1 rounded-lg text-white/50 hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -374,45 +364,43 @@ export const FirebaseProjectsWidget: React.FC<FirebaseProjectsWidgetProps> = ({
 
             <form onSubmit={handleAdd} className="space-y-3">
               <div>
-                <label className="text-xs text-slate-400 font-semibold block mb-1">
-                  Project Name / Alias
-                </label>
+                <span className="text-[11px] text-white/70 block mb-1">Project Name</span>
                 <input
                   type="text"
                   value={newProjectName}
                   onChange={(e) => setNewProjectName(e.target.value)}
-                  placeholder="e.g. Infyn Production"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                  placeholder="e.g. My App Cloud"
+                  className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-white/50"
+                  required
                 />
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 font-semibold block mb-1">
-                  Firebase Project ID <span className="text-amber-400">*</span>
-                </label>
+                <span className="text-[11px] text-white/70 block mb-1">Project ID</span>
                 <input
                   type="text"
-                  required
                   value={newProjectId}
                   onChange={(e) => setNewProjectId(e.target.value)}
-                  placeholder="e.g. infyn-app"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono text-xs"
+                  placeholder="e.g. my-app-prod-123"
+                  className="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-white/50"
+                  required
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+                  className="px-3 py-1.5 rounded-xl text-xs text-white/70 hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md shadow-amber-500/30"
+                  disabled={!newProjectId.trim()}
+                  className="px-4 py-1.5 rounded-xl bg-white hover:bg-neutral-200 disabled:opacity-40 text-black text-xs font-bold shadow-sm"
                 >
-                  Add Project
+                  Connect Project
                 </button>
               </div>
             </form>

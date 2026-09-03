@@ -4,6 +4,11 @@ import type {
   SearchEngine,
   UserSettings,
   WallpaperStyle,
+  WidgetPlacement,
+  DashboardScreen,
+  WidgetConfig,
+  TodoItem,
+  GithubRepo,
 } from '../types'
 
 export const DEFAULT_SEARCH_ENGINES: Record<string, SearchEngine> = {
@@ -234,30 +239,211 @@ export const WALLPAPERS: { id: WallpaperStyle; name: string; class: string; prev
     class: 'bg-gradient-to-br from-[#e0c3fc] via-[#8ec5fc] to-[#e2ebf0]',
     preview: 'from-purple-200 via-blue-200 to-slate-100',
   },
+  {
+    id: 'emerald-aurora',
+    name: 'Emerald Borealis',
+    class: 'bg-gradient-to-br from-[#062c20] via-[#0d5940] to-[#041a13]',
+    preview: 'from-emerald-950 via-emerald-700 to-teal-900',
+  },
+  {
+    id: 'midnight-abyss',
+    name: 'Midnight Obsidian',
+    class: 'bg-gradient-to-br from-[#090b10] via-[#151c2e] to-[#06070a]',
+    preview: 'from-black via-slate-900 to-zinc-950',
+  },
+  {
+    id: 'cosmic-fusion',
+    name: 'Cosmic Velvet',
+    class: 'bg-gradient-to-br from-[#1a0826] via-[#35104d] to-[#0f0417]',
+    preview: 'from-purple-950 via-fuchsia-900 to-slate-950',
+  },
+  {
+    id: 'electric-indigo',
+    name: 'Electric Indigo Silk',
+    class: 'bg-gradient-to-br from-[#0a0d2c] via-[#1d2368] to-[#07091e]',
+    preview: 'from-indigo-950 via-blue-900 to-indigo-950',
+  },
+  {
+    id: 'carbon-titanium',
+    name: 'Carbon Titanium',
+    class: 'bg-gradient-to-br from-[#121316] via-[#242731] to-[#0d0e11]',
+    preview: 'from-neutral-900 via-zinc-800 to-stone-950',
+  },
+  {
+    id: 'hyper-marine',
+    name: 'Deep Marine Cyan',
+    class: 'bg-gradient-to-br from-[#051c24] via-[#0a4358] to-[#03131a]',
+    preview: 'from-cyan-950 via-teal-800 to-slate-950',
+  },
 ]
+
+export const DEFAULT_SCREENS: DashboardScreen[] = [
+  { id: 'screen-1', name: 'Home' },
+  { id: 'screen-2', name: 'Productivity' },
+  { id: 'screen-3', name: 'Dev' },
+]
+
+export const DEFAULT_GITHUB_REPOS: GithubRepo[] = [
+  {
+    id: 'repo-1',
+    name: 'indivio-extension',
+    owner: 'imvicky69',
+    defaultBranch: 'main',
+    description: 'Infyn Home Tab - Minimalist Chrome extension dashboard',
+  },
+]
+
+export const DEFAULT_TODOS: TodoItem[] = [
+  { id: 'todo-1', text: 'Plan top 3 goals for today', completed: false, createdAt: Date.now() - 3600000, starred: true, tag: 'Work' },
+  { id: 'todo-2', text: 'Review sprint tasks & architecture', completed: false, createdAt: Date.now() - 1800000, tag: 'Work' },
+  { id: 'todo-3', text: 'Take a mindful breather & focus break', completed: true, createdAt: Date.now() - 7200000, tag: 'Personal' },
+]
+
+export const DEFAULT_WIDGET_CONFIGS: Record<string, WidgetConfig> = {
+  weather: { id: 'weather', screenId: 'screen-1', size: 'compact', order: 0 },
+  calendar: { id: 'calendar', screenId: 'screen-1', size: 'compact', order: 1 },
+  shortcuts: { id: 'shortcuts', screenId: 'screen-1', size: 'wide', order: 2 },
+  notes: { id: 'notes', screenId: 'screen-2', size: 'normal', order: 0 },
+  focusTimer: { id: 'focusTimer', screenId: 'screen-2', size: 'normal', order: 1 },
+  todos: { id: 'todos', screenId: 'screen-2', size: 'wide', order: 2 },
+  github: { id: 'github', screenId: 'screen-3', size: 'normal', order: 0 },
+  firebase: { id: 'firebase', screenId: 'screen-3', size: 'normal', order: 1 },
+}
+
+export const DEFAULT_WIDGET_PLACEMENTS: Record<string, WidgetPlacement> = {
+  weather: 'screen1',
+  calendar: 'screen1',
+  shortcuts: 'screen1',
+  notes: 'screen2',
+  focusTimer: 'screen2',
+  todos: 'screen2',
+  github: 'screen2',
+  firebase: 'screen2',
+}
 
 export const DEFAULT_SETTINGS: UserSettings = {
   userName: 'Vikky Raja',
   userAvatar: '',
   wallpaper: 'silk-aurora',
+  liveWallpaper: true,
   colorMode: 'dark',
   defaultSearchEngine: 'google',
   weatherCity: 'Varanasi',
   firebaseProjects: DEFAULT_FIREBASE_PROJECTS,
+  githubUsername: 'imvicky69',
+  githubRepos: DEFAULT_GITHUB_REPOS,
   apps: DEFAULT_APPS,
+  timeFormat: '12h',
+  showSeconds: false,
+  showGreeting: false,
+  showDate: true,
+  showSearchBar: false,
+  timezone: 'auto',
   widgets: {
+    weather: true,
+    calendar: true,
+    firebase: true,
+    github: true,
     shortcuts: true,
     todos: true,
     notes: true,
     focusTimer: true,
-    quotes: true,
+    quotes: false,
+    clock: true,
+    searchBar: true,
   },
+  widgetPlacements: DEFAULT_WIDGET_PLACEMENTS,
+  screens: DEFAULT_SCREENS,
+  defaultScreenId: 'screen-1',
+  widgetConfigs: DEFAULT_WIDGET_CONFIGS,
 }
 
 export function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {
     const item = localStorage.getItem(`infyn_${key}`) || localStorage.getItem(`indivio_${key}`)
-    return item ? JSON.parse(item) : defaultValue
+    if (!item) return defaultValue
+    const parsed = JSON.parse(item)
+    if (key === 'settings' && typeof defaultValue === 'object' && defaultValue !== null) {
+      const def = defaultValue as Record<string, any>
+      const parsedPlacements = parsed.widgetPlacements || {}
+
+      const mergedConfigs: Record<string, WidgetConfig> = {
+        ...DEFAULT_WIDGET_CONFIGS,
+        ...(parsed.widgetConfigs || {}),
+      }
+
+      // Backward compatibility: If legacy widgetPlacements exist but not widgetConfigs
+      if (!parsed.widgetConfigs && parsed.widgetPlacements) {
+        Object.entries(parsed.widgetPlacements).forEach(([wId, placement]) => {
+          if (mergedConfigs[wId]) {
+            mergedConfigs[wId] = {
+              ...mergedConfigs[wId],
+              screenId: placement === 'screen1' ? 'screen-1' : placement === 'screen2' ? 'screen-2' : 'hidden',
+            }
+          }
+        })
+      }
+
+      // Auto-migrate legacy default 'wide' size for notes and focusTimer to 'normal'
+      if (mergedConfigs.notes && mergedConfigs.notes.size === 'wide') {
+        mergedConfigs.notes.size = 'normal'
+      }
+      if (mergedConfigs.focusTimer && mergedConfigs.focusTimer.size === 'wide') {
+        mergedConfigs.focusTimer.size = 'normal'
+      }
+
+      // Move firebase from screen-1 to screen-3 (Dev)
+      if (mergedConfigs.firebase && (mergedConfigs.firebase.screenId === 'screen-1' || !mergedConfigs.firebase.screenId)) {
+        mergedConfigs.firebase.screenId = 'screen-3'
+      }
+
+      // Ensure github is configured on screen-3 by default
+      if (!mergedConfigs.github) {
+        mergedConfigs.github = { id: 'github', screenId: 'screen-3', size: 'normal', order: 0 }
+      }
+
+      // Ensure todos is configured on screen-2 by default if not set
+      if (!mergedConfigs.todos) {
+        mergedConfigs.todos = { id: 'todos', screenId: 'screen-2', size: 'wide', order: 2 }
+      }
+
+      // Ensure Dev screen exists in screens array
+      let resolvedScreens: DashboardScreen[] =
+        Array.isArray(parsed.screens) && parsed.screens.length > 0 ? parsed.screens : DEFAULT_SCREENS
+      if (!resolvedScreens.some((s) => s.id === 'screen-3')) {
+        resolvedScreens = [...resolvedScreens, { id: 'screen-3', name: 'Dev' }]
+      }
+
+      const resolvedWidgets = {
+        ...def.widgets,
+        ...(parsed.widgets || {}),
+        github: parsed.widgets?.github ?? true,
+        firebase: parsed.widgets?.firebase ?? true,
+      }
+
+      // Ensure any widget that is assigned to a screen (and not hidden) is enabled in widgets map
+      Object.entries(mergedConfigs).forEach(([wKey, cfg]) => {
+        if (cfg.screenId && cfg.screenId !== 'hidden') {
+          resolvedWidgets[wKey] = true
+        } else if (cfg.screenId === 'hidden') {
+          resolvedWidgets[wKey] = false
+        }
+      })
+
+      return {
+        ...def,
+        ...parsed,
+        screens: resolvedScreens,
+        defaultScreenId: parsed.defaultScreenId || 'screen-1',
+        widgetConfigs: mergedConfigs,
+        widgets: resolvedWidgets,
+        widgetPlacements: {
+          ...DEFAULT_WIDGET_PLACEMENTS,
+          ...parsedPlacements,
+        },
+      } as T
+    }
+    return parsed
   } catch (error) {
     console.error(`Error loading ${key} from storage:`, error)
     return defaultValue
@@ -267,6 +453,10 @@ export function loadFromStorage<T>(key: string, defaultValue: T): T {
 export function saveToStorage<T>(key: string, value: T): void {
   try {
     localStorage.setItem(`infyn_${key}`, JSON.stringify(value))
+    const chromeObj = (globalThis as any).chrome
+    if (chromeObj?.storage?.local) {
+      chromeObj.storage.local.set({ [`infyn_${key}`]: value }).catch(() => { })
+    }
   } catch (error) {
     console.error(`Error saving ${key} to storage:`, error)
   }
