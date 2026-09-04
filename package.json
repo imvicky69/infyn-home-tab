@@ -1,7 +1,15 @@
 {
   "name": "infyn-home-tab",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A sleek, productive developer new tab homescreen dashboard with widgets, quick shortcuts, notes, and search.",
+  "homepage": "https://infyn.software",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imvicky69/infyn-home-tab.git"
+  },
+  "author": "Vicky (https://github.com/imvicky69)",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
