@@ -13,6 +13,12 @@
     <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/Contributions-Welcome-blue.svg" alt="Contributions Welcome"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-emerald.svg" alt="License: MIT"></a>
   </p>
+
+  <br />
+
+  <a href="#-screenshots--preview">
+    <img src="public/screenshot-1.png" alt="Infyn Home Tab Dashboard Preview" width="100%" style="border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);" />
+  </a>
 </div>
 
 ---
@@ -24,6 +30,24 @@
 Whether you're monitoring your active **GitHub repositories**, jumping between **Firebase console services**, tracking sprint tasks in a fluid **Todo manager**, drafting ideas in a **scratchpad**, or entering deep focus with the **Pomodoro timer**, Infyn Home Tab delivers an instantaneous, zero-latency experience every time you open a tab.
 
 Infyn Home Tab is 100% open source and part of the **[Infyn](https://infyn.software)** family of privacy-first software tools.
+
+---
+
+## 📸 Screenshots & Preview
+
+<div align="center">
+  <h3>🏠 Screen 1: Home Dashboard</h3>
+  <p><em>Ambient clock with live seconds, local weather conditions, interactive calendar, and quick-access application grid.</em></p>
+  <img src="public/screenshot-1.png" alt="Infyn Home Tab - Screen 1 Home Preview" width="100%" style="border-radius: 12px;" />
+</div>
+
+<br />
+
+<div align="center">
+  <h3>⚡ Screen 2: Productivity Board & Focus Suite</h3>
+  <p><em>Integrated Pomodoro Focus Timer, persistent auto-saving scratchpad notes, and interactive priority task management with category tags.</em></p>
+  <img src="public/screenshot-2.png" alt="Infyn Home Tab - Screen 2 Productivity Preview" width="100%" style="border-radius: 12px;" />
+</div>
 
 ---
 
