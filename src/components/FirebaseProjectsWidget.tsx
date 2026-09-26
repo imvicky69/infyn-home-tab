@@ -11,6 +11,7 @@ import {
   Trash2,
   ExternalLink,
   ChevronDown,
+  ChevronUp,
   Copy,
   Check,
   X,
@@ -36,6 +37,14 @@ export const FirebaseProjectsWidget: React.FC<FirebaseProjectsWidgetProps> = ({
   const [newProjectName, setNewProjectName] = useState('')
   const [copied, setCopied] = useState(false)
 
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('infyn_firebase_widget_collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
+
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -47,6 +56,16 @@ export const FirebaseProjectsWidget: React.FC<FirebaseProjectsWidgetProps> = ({
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  const toggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('infyn_firebase_widget_collapsed', String(next))
+      } catch {}
+      return next
+    })
+  }
 
   const activeProject = projects.find((p) => p.id === selectedProjectId) || projects[0] || null
   const currentProjectId = activeProject?.projectId || ''
@@ -92,88 +111,116 @@ export const FirebaseProjectsWidget: React.FC<FirebaseProjectsWidgetProps> = ({
     {
       id: 'auth',
       name: 'Auth',
-      desc: 'Users & providers',
       icon: Users,
       url: `https://console.firebase.google.com/project/${projectId}/authentication/users`,
-      badge: 'Users',
+      tooltip: 'Authentication users & providers',
     },
     {
       id: 'firestore',
       name: 'Firestore',
-      desc: 'Collections & data',
       icon: Database,
       url: `https://console.firebase.google.com/project/${projectId}/firestore/data`,
-      badge: 'Data',
+      tooltip: 'Firestore database & collections',
     },
     {
       id: 'storage',
       name: 'Storage',
-      desc: 'Buckets & media',
       icon: HardDrive,
       url: `https://console.firebase.google.com/project/${projectId}/storage`,
-      badge: 'Media',
+      tooltip: 'Cloud Storage buckets & media',
     },
     {
       id: 'hosting',
       name: 'Hosting',
-      desc: 'Deploys & domains',
       icon: Globe,
       url: `https://console.firebase.google.com/project/${projectId}/hosting`,
-      badge: 'Domains',
+      tooltip: 'Hosting deploys & domains',
     },
     {
       id: 'functions',
       name: 'Functions',
-      desc: 'Cloud serverless',
       icon: Code,
       url: `https://console.firebase.google.com/project/${projectId}/functions`,
-      badge: 'API',
+      tooltip: 'Cloud Functions & APIs',
     },
     {
       id: 'settings',
       name: 'Settings',
-      desc: 'Keys & project config',
       icon: Settings,
       url: `https://console.firebase.google.com/project/${projectId}/settings/general`,
-      badge: 'Config',
+      tooltip: 'Project keys & settings',
     },
   ]
 
   return (
-    <div className="flex flex-col h-full bg-black/35 hover:bg-black/45 border border-white/10 hover:border-white/20 rounded-3xl p-5 backdrop-blur-xl shadow-xl transition-all text-white w-full">
-      {/* Header Bar with Project Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-white/10 border border-white/15 text-white shadow-xs">
+    <div className="flex flex-col bg-black/35 hover:bg-black/45 border border-white/10 hover:border-white/20 rounded-3xl p-3.5 sm:p-4 backdrop-blur-xl shadow-xl transition-all duration-300 text-white w-full">
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between gap-2.5">
+        {/* Left: Flame Icon & Title (or active project preview if collapsed) */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="p-1.5 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-400 shrink-0">
             <Flame className="h-4 w-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-white tracking-tight">Firebase Projects</h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-white/80">
-                {projects.length} Connected
-              </span>
-            </div>
-            <p className="text-[11px] text-white/60">Launch Firestore, Auth, Storage & cloud consoles</p>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-xs sm:text-sm font-bold text-white tracking-tight shrink-0">
+              Firebase
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-white/10 text-white/70 shrink-0">
+              {projects.length}
+            </span>
+
+            {/* In collapsed mode, show active project pill directly in the header */}
+            {isCollapsed && activeProject && (
+              <div className="flex items-center gap-1.5 min-w-0 ml-1 pl-2 border-l border-white/15">
+                <a
+                  href={`https://console.firebase.google.com/project/${currentProjectId}/overview`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-semibold text-white/90 hover:text-white hover:underline truncate flex items-center gap-1"
+                  title={`Open Firebase Console for ${currentProjectName}`}
+                >
+                  <span className="truncate">{currentProjectName}</span>
+                  <ExternalLink className="h-2.5 w-2.5 text-white/40 shrink-0" />
+                </a>
+                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/10 text-white/60 shrink-0">
+                  {currentProjectId}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Project Switcher & Add Button */}
-        <div className="flex items-center gap-2">
+        {/* Right: Actions, Switcher, Add, Collapse Toggle */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Collapsed Copy ID Shortcut Button */}
+          {isCollapsed && activeProject && (
+            <button
+              type="button"
+              onClick={handleCopyId}
+              className="px-2 py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] text-white flex items-center gap-1 transition-colors"
+              title="Copy Project ID"
+            >
+              {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 text-white/70" />}
+              <span className="hidden sm:inline">{copied ? 'Copied' : 'Copy ID'}</span>
+            </button>
+          )}
+
+          {/* Project Switcher Dropdown */}
           {projects.length > 0 && (
             <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-black/45 hover:bg-black/60 border border-white/15 text-xs text-white font-medium transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs text-white transition-all max-w-[120px] sm:max-w-[140px]"
+                title="Switch project"
               >
-                <Flame className="h-3 w-3 text-white/70" />
-                <span className="max-w-[130px] truncate">{activeProject?.name}</span>
-                <ChevronDown className={`h-3 w-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <Flame className="h-3 w-3 text-amber-400/80 shrink-0" />
+                <span className="truncate">{activeProject?.name}</span>
+                <ChevronDown className={`h-3 w-3 transition-transform shrink-0 ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-60 bg-neutral-950/95 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl py-1 z-30 animate-in fade-in">
+                <div className="absolute right-0 top-full mt-1.5 w-60 bg-neutral-950/95 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl py-1 z-50 animate-in fade-in">
                   <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-white/50 border-b border-white/10">
                     Switch Project
                   </div>
@@ -213,134 +260,136 @@ export const FirebaseProjectsWidget: React.FC<FirebaseProjectsWidgetProps> = ({
             </div>
           )}
 
+          {/* Add Project Button */}
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="p-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-white shadow-xs transition-all hover:scale-105"
+            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white shadow-xs transition-all hover:scale-105"
             title="Add Firebase Project"
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
+
+          {/* Collapse/Expand Toggle Button */}
+          <button
+            type="button"
+            onClick={toggleCollapse}
+            className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white transition-all"
+            title={isCollapsed ? 'Expand card' : 'Collapse card'}
+          >
+            {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+          </button>
         </div>
       </div>
 
-      {/* Active Project Banner & Quick Actions */}
-      {activeProject ? (
-        <div className="space-y-4 flex-1 flex flex-col justify-between">
-          <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="p-2 rounded-xl bg-white/10 border border-white/15 text-white shrink-0">
-                <Flame className="h-4 w-4" />
+      {/* Expanded Content Section */}
+      {!isCollapsed && (
+        <div className="mt-3 space-y-3 animate-in fade-in duration-200">
+          {activeProject ? (
+            <>
+              {/* Active Project Bar */}
+              <div className="px-3 py-2 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-2.5">
+                <div className="min-w-0 flex items-center gap-2">
+                  <Flame className="h-3.5 w-3.5 text-amber-400/80 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <a
+                        href={`https://console.firebase.google.com/project/${currentProjectId}/overview`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs font-bold text-white hover:underline truncate flex items-center gap-1"
+                      >
+                        <span className="truncate">{currentProjectName}</span>
+                        <ExternalLink className="h-3 w-3 text-white/50 shrink-0" />
+                      </a>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/10 border border-white/10 text-white/70 shrink-0">
+                        Console
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-white/50 font-mono truncate mt-0.5">
+                      ID: {currentProjectId}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleCopyId}
+                    className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] text-white flex items-center gap-1.5 transition-colors"
+                    title="Copy Project ID"
+                  >
+                    {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 text-white/70" />}
+                    <span>{copied ? 'Copied' : 'Copy ID'}</span>
+                  </button>
+                </div>
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
+
+              {/* Compact Quick Launcher Grid (Icon + Label only, no redundant badges/subtitles) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {getLaunchShortcuts(currentProjectId).map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <a
+                      key={item.id}
+                      href={item.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={item.tooltip}
+                      className="group flex items-center gap-2 px-2.5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 text-white/80 hover:text-white transition-all duration-150"
+                    >
+                      <Icon className="h-3.5 w-3.5 text-white/60 group-hover:text-amber-300 group-hover:scale-110 transition-all shrink-0" />
+                      <span className="text-xs font-medium truncate">{item.name}</span>
+                    </a>
+                  )
+                })}
+              </div>
+
+              {/* Bottom Links */}
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-white/50">
+                <a
+                  href="https://console.firebase.google.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-white flex items-center gap-1 transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  <span className="truncate">Firebase Console</span>
+                </a>
+                <div className="flex items-center gap-3 shrink-0">
+                  <a
+                    href="https://firebase.google.com/docs"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-white flex items-center gap-1 transition-colors"
+                  >
+                    <FileText className="h-3 w-3" />
+                    <span>Docs</span>
+                  </a>
                   <a
                     href={`https://console.firebase.google.com/project/${currentProjectId}/overview`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs sm:text-sm font-bold text-white hover:underline truncate flex items-center gap-1.5"
+                    className="hover:text-white transition-colors"
                   >
-                    <span>{currentProjectName}</span>
-                    <ExternalLink className="h-3 w-3 text-white/50 shrink-0" />
+                    Overview
                   </a>
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/10 border border-white/15 text-white/70 shrink-0">
-                    Console
-                  </span>
                 </div>
-                <p className="text-[11px] text-white/60 font-mono truncate mt-0.5">ID: {currentProjectId}</p>
               </div>
-            </div>
-
-            <div className="flex items-center gap-1.5">
+            </>
+          ) : (
+            <div className="p-6 text-center text-xs text-white/50 border border-dashed border-white/15 rounded-2xl flex flex-col items-center gap-2">
+              <Flame className="h-6 w-6 text-white/30" />
+              <p>No Firebase projects connected yet.</p>
               <button
                 type="button"
-                onClick={handleCopyId}
-                className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] text-white flex items-center gap-1.5 transition-colors"
-                title="Copy Project ID"
+                onClick={() => setIsAddModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-neutral-200 text-black font-semibold text-xs transition-all"
               >
-                {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 text-white/60" />}
-                <span>{copied ? 'Copied' : 'Copy ID'}</span>
+                Add Project
               </button>
             </div>
-          </div>
-
-          {/* Quick Launcher Grid (Auth, Firestore, Storage, Hosting, Functions, Settings) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {getLaunchShortcuts(currentProjectId).map((item) => {
-              const Icon = item.icon
-
-              return (
-                <a
-                  key={item.id}
-                  href={item.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group p-3 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/10 hover:border-white/30 text-white transition-all flex flex-col justify-between h-20 shadow-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="p-1.5 rounded-xl bg-white/10 border border-white/15 text-white group-hover:scale-105 transition-transform">
-                      <Icon className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-white/50 group-hover:text-white/80 transition-colors">
-                      {item.badge}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-xs font-bold block truncate group-hover:translate-x-0.5 transition-transform">
-                      {item.name}
-                    </span>
-                    <span className="text-[10px] text-white/50 block truncate">{item.desc}</span>
-                  </div>
-                </a>
-              )
-            })}
-          </div>
-
-          {/* Bottom Profile Links Bar */}
-          <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
-            <a
-              href="https://console.firebase.google.com"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-white flex items-center gap-1.5 transition-colors"
-            >
-              <ExternalLink className="h-3 w-3" />
-              <span>console.firebase.google.com</span>
-            </a>
-
-            <div className="flex items-center gap-3">
-              <a
-                href="https://firebase.google.com/docs"
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-white flex items-center gap-1 transition-colors"
-              >
-                <FileText className="h-3 w-3" />
-                <span>Documentation</span>
-              </a>
-              <a
-                href={`https://console.firebase.google.com/project/${currentProjectId}/overview`}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-white transition-colors"
-              >
-                Overview
-              </a>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="p-8 text-center text-xs text-white/50 border border-dashed border-white/15 rounded-2xl flex flex-col items-center gap-3">
-          <Flame className="h-8 w-8 text-white/30" />
-          <p>No Firebase projects connected yet. Add your main project to get quick 1-click cloud launchers.</p>
-          <button
-            type="button"
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black font-bold text-xs shadow-md transition-all"
-          >
-            Add Project
-          </button>
+          )}
         </div>
       )}
 
@@ -350,7 +399,7 @@ export const FirebaseProjectsWidget: React.FC<FirebaseProjectsWidgetProps> = ({
           <div className="bg-neutral-950 border border-white/20 rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl text-white space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <Flame className="h-5 w-5" />
+                <Flame className="h-5 w-5 text-amber-400" />
                 <h4 className="text-sm font-bold">Add Firebase Project</h4>
               </div>
               <button

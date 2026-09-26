@@ -476,7 +476,7 @@ export default function App() {
     const pairWeatherCalendar = hasWeather && hasCalendar
 
     return (
-      <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch animate-in fade-in duration-300">
+      <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-5 items-start animate-in fade-in duration-300">
         {pairWeatherCalendar && (
           <div className="grid grid-cols-2 gap-3 w-full justify-items-center md:col-span-1">
             <WeatherCard city={settings.weatherCity} />
@@ -491,7 +491,7 @@ export default function App() {
           return (
             <div
               key={key}
-              className={`${isWide ? 'md:col-span-2' : 'col-span-1'} w-full flex justify-center`}
+              className={`${isWide ? 'md:col-span-2' : 'col-span-1'} w-full flex justify-center items-start`}
             >
               {renderWidget(key, size)}
             </div>

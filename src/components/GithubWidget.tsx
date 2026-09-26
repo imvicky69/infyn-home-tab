@@ -11,6 +11,7 @@ import {
   Trash2,
   ExternalLink,
   ChevronDown,
+  ChevronUp,
   Copy,
   Check,
   X,
@@ -46,6 +47,14 @@ export const GithubWidget: React.FC<GithubWidgetProps> = ({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('infyn_github_widget_collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
+
   const [newRepoName, setNewRepoName] = useState('')
   const [newOwner, setNewOwner] = useState(defaultUsername)
   const [newBranch, setNewBranch] = useState('main')
@@ -69,6 +78,15 @@ export const GithubWidget: React.FC<GithubWidgetProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const toggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('infyn_github_widget_collapsed', String(next))
+      } catch {}
+      return next
+    })
+  }
 
   const activeRepo = repos.find((r) => r.id === selectedRepoId) || repos[0] || null
   const currentOwner = (activeRepo?.owner && activeRepo.owner !== 'imvicky69')
@@ -145,88 +163,116 @@ export const GithubWidget: React.FC<GithubWidgetProps> = ({
     {
       id: 'commits',
       name: 'Commits',
-      desc: 'Log & history',
       icon: GitCommit,
       url: `https://github.com/${owner}/${repo}/commits/${branch}`,
-      badge: 'git log',
-    },
-    {
-      id: 'actions',
-      name: 'Actions',
-      desc: 'CI/CD workflows',
-      icon: Zap,
-      url: `https://github.com/${owner}/${repo}/actions`,
-      badge: 'CI/CD',
+      tooltip: 'View commits log & history',
     },
     {
       id: 'pulls',
       name: 'Pull Requests',
-      desc: 'Reviews & merges',
       icon: GitPullRequest,
       url: `https://github.com/${owner}/${repo}/pulls`,
-      badge: 'PRs',
+      tooltip: 'View pull requests',
+    },
+    {
+      id: 'actions',
+      name: 'Actions',
+      icon: Zap,
+      url: `https://github.com/${owner}/${repo}/actions`,
+      tooltip: 'View CI/CD workflows',
     },
     {
       id: 'issues',
       name: 'Issues',
-      desc: 'Bug tracking & tasks',
       icon: AlertCircle,
       url: `https://github.com/${owner}/${repo}/issues`,
-      badge: 'Bugs',
+      tooltip: 'View bug tracking & issues',
     },
     {
       id: 'releases',
       name: 'Releases',
-      desc: 'Tags & artifacts',
       icon: Package,
       url: `https://github.com/${owner}/${repo}/releases`,
-      badge: 'Tags',
+      tooltip: 'View tags & releases',
     },
     {
       id: 'settings',
       name: 'Settings',
-      desc: 'Hooks & access',
       icon: Settings,
       url: `https://github.com/${owner}/${repo}/settings`,
-      badge: 'Config',
+      tooltip: 'Repository settings',
     },
   ]
 
   return (
-    <div className="flex flex-col h-full bg-black/35 hover:bg-black/45 border border-white/10 hover:border-white/20 rounded-3xl p-5 backdrop-blur-xl shadow-xl transition-all text-white w-full">
-      {/* Header Bar with Project Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-white/10 border border-white/15 text-white shadow-xs">
+    <div className="flex flex-col bg-black/35 hover:bg-black/45 border border-white/10 hover:border-white/20 rounded-3xl p-3.5 sm:p-4 backdrop-blur-xl shadow-xl transition-all duration-300 text-white w-full">
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between gap-2.5">
+        {/* Left: Brand Icon & Title (or active repo preview if collapsed) */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="p-1.5 rounded-xl bg-white/10 border border-white/15 text-white shrink-0">
             <GithubIcon className="h-4 w-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-white tracking-tight">GitHub Projects</h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-white/80">
-                {repos.length} Pinned
-              </span>
-            </div>
-            <p className="text-[11px] text-white/60">Launch commits, actions, PRs & repo consoles</p>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-xs sm:text-sm font-bold text-white tracking-tight shrink-0">
+              GitHub
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-white/10 text-white/70 shrink-0">
+              {repos.length}
+            </span>
+
+            {/* In collapsed mode, show active repo pill directly in the header */}
+            {isCollapsed && activeRepo && (
+              <div className="flex items-center gap-1.5 min-w-0 ml-1 pl-2 border-l border-white/15">
+                <a
+                  href={`https://github.com/${currentOwner}/${currentRepoName}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-semibold text-white/90 hover:text-white hover:underline truncate flex items-center gap-1"
+                  title={`Open https://github.com/${currentOwner}/${currentRepoName}`}
+                >
+                  <span className="truncate">{activeRepo.name}</span>
+                  <ExternalLink className="h-2.5 w-2.5 text-white/40 shrink-0" />
+                </a>
+                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/10 text-white/60 shrink-0">
+                  {currentBranch}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Repos Switcher & Add Button */}
-        <div className="flex items-center gap-2">
+        {/* Right: Actions, Switcher, Add, Collapse Toggle */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Collapsed Clone Shortcut Button */}
+          {isCollapsed && activeRepo && (
+            <button
+              type="button"
+              onClick={handleCopyClone}
+              className="px-2 py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] text-white flex items-center gap-1 transition-colors"
+              title="Copy git clone URL"
+            >
+              {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 text-white/70" />}
+              <span className="hidden sm:inline">{copied ? 'Copied' : 'Clone'}</span>
+            </button>
+          )}
+
+          {/* Repo Switcher Dropdown */}
           {repos.length > 0 && (
             <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-black/45 hover:bg-black/60 border border-white/15 text-xs text-white font-medium transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs text-white transition-all max-w-[120px] sm:max-w-[140px]"
+                title="Switch repository"
               >
-                <GitBranch className="h-3 w-3 text-white/70" />
-                <span className="max-w-[130px] truncate">{activeRepo?.name}</span>
-                <ChevronDown className={`h-3 w-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <GitBranch className="h-3 w-3 text-white/70 shrink-0" />
+                <span className="truncate">{activeRepo?.name}</span>
+                <ChevronDown className={`h-3 w-3 transition-transform shrink-0 ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-60 bg-neutral-950/95 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl py-1 z-30 animate-in fade-in">
+                <div className="absolute right-0 top-full mt-1.5 w-60 bg-neutral-950/95 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl py-1 z-50 animate-in fade-in">
                   <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-white/50 border-b border-white/10">
                     Switch Repository
                   </div>
@@ -264,148 +310,148 @@ export const GithubWidget: React.FC<GithubWidgetProps> = ({
             </div>
           )}
 
+          {/* Add Repo Button */}
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="p-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-white shadow-xs transition-all hover:scale-105"
+            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white shadow-xs transition-all hover:scale-105"
             title="Add GitHub Repository"
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
+
+          {/* Collapse/Expand Toggle Button */}
+          <button
+            type="button"
+            onClick={toggleCollapse}
+            className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white transition-all"
+            title={isCollapsed ? 'Expand card' : 'Collapse card'}
+          >
+            {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+          </button>
         </div>
       </div>
 
-      {/* Active Repo Banner & Quick Actions */}
-      {activeRepo ? (
-        <div className="space-y-4 flex-1 flex flex-col justify-between">
-          <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="p-2 rounded-xl bg-white/10 border border-white/15 text-white shrink-0">
-                <GitBranch className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <a
-                    href={`https://github.com/${currentOwner}/${currentRepoName}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs sm:text-sm font-bold text-white hover:underline truncate flex items-center gap-1.5"
-                  >
-                    <span>{currentOwner}/{currentRepoName}</span>
-                    <ExternalLink className="h-3 w-3 text-white/50 shrink-0" />
-                  </a>
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/10 border border-white/15 text-white/70 shrink-0">
-                    {currentBranch}
-                  </span>
+      {/* Expanded Content Section */}
+      {!isCollapsed && (
+        <div className="mt-3 space-y-3 animate-in fade-in duration-200">
+          {activeRepo ? (
+            <>
+              {/* Active Repo Bar */}
+              <div className="px-3 py-2 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-2.5">
+                <div className="min-w-0 flex items-center gap-2">
+                  <GitBranch className="h-3.5 w-3.5 text-white/60 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <a
+                        href={`https://github.com/${currentOwner}/${currentRepoName}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs font-bold text-white hover:underline truncate flex items-center gap-1"
+                      >
+                        <span className="truncate">{currentOwner}/{currentRepoName}</span>
+                        <ExternalLink className="h-3 w-3 text-white/50 shrink-0" />
+                      </a>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/10 border border-white/10 text-white/70 shrink-0">
+                        {currentBranch}
+                      </span>
+                    </div>
+                    {activeRepo.description && (
+                      <p className="text-[10px] text-white/50 truncate mt-0.5 max-w-xs sm:max-w-md">
+                        {activeRepo.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                {activeRepo.description && (
-                  <p className="text-[11px] text-white/60 truncate mt-0.5">{activeRepo.description}</p>
-                )}
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {onUpdateRepo && (
+                    <button
+                      type="button"
+                      onClick={openEditModal}
+                      className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 text-white/60 hover:text-white transition-colors border border-white/10"
+                      title="Edit repository"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleCopyClone}
+                    className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] text-white flex items-center gap-1.5 transition-colors"
+                    title="Copy git clone URL"
+                  >
+                    {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 text-white/70" />}
+                    <span>{copied ? 'Copied' : 'Clone'}</span>
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-1.5">
-              {onUpdateRepo && (
-                <button
-                  type="button"
-                  onClick={openEditModal}
-                  className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] text-white flex items-center gap-1 transition-colors"
-                  title="Edit repository name, owner or branch"
-                >
-                  <Edit3 className="h-3 w-3 text-white/70" />
-                  <span>Edit</span>
-                </button>
-              )}
+              {/* Compact Quick Launcher Grid (Icon + Label only, no redundant badges/subtitles) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {getLaunchShortcuts(currentOwner, currentRepoName, currentBranch).map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <a
+                      key={item.id}
+                      href={item.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={item.tooltip}
+                      className="group flex items-center gap-2 px-2.5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 text-white/80 hover:text-white transition-all duration-150"
+                    >
+                      <Icon className="h-3.5 w-3.5 text-white/60 group-hover:text-white group-hover:scale-110 transition-all shrink-0" />
+                      <span className="text-xs font-medium truncate">{item.name}</span>
+                    </a>
+                  )
+                })}
+              </div>
 
-              <button
-                type="button"
-                onClick={handleCopyClone}
-                className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] text-white flex items-center gap-1.5 transition-colors"
-                title="Copy git clone URL"
-              >
-                {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 text-white/60" />}
-                <span>{copied ? 'Copied' : 'Clone'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Launcher Grid (Commits, Actions, PRs, Issues, Releases, Settings) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {getLaunchShortcuts(currentOwner, currentRepoName, currentBranch).map((item) => {
-              const Icon = item.icon
-
-              return (
+              {/* Bottom Profile Links */}
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-white/50">
                 <a
-                  key={item.id}
-                  href={item.url}
+                  href={`https://github.com/${currentOwner}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="group p-3 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/10 hover:border-white/30 text-white transition-all flex flex-col justify-between h-20 shadow-xs"
+                  className="hover:text-white flex items-center gap-1 transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="p-1.5 rounded-xl bg-white/10 border border-white/15 text-white group-hover:scale-105 transition-transform">
-                      <Icon className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-white/50 group-hover:text-white/80 transition-colors">
-                      {item.badge}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-xs font-bold block truncate group-hover:translate-x-0.5 transition-transform">
-                      {item.name}
-                    </span>
-                    <span className="text-[10px] text-white/50 block truncate">{item.desc}</span>
-                  </div>
+                  <User className="h-3 w-3" />
+                  <span className="truncate">{currentOwner}</span>
                 </a>
-              )
-            })}
-          </div>
-
-          {/* Bottom Profile Links Bar */}
-          <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
-            <a
-              href={`https://github.com/${currentOwner}`}
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-white flex items-center gap-1.5 transition-colors"
-            >
-              <User className="h-3 w-3" />
-              <span>github.com/{currentOwner}</span>
-            </a>
-
-            <div className="flex items-center gap-3">
-              <a
-                href={`https://github.com/${currentOwner}?tab=repositories`}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-white transition-colors"
+                <div className="flex items-center gap-3 shrink-0">
+                  <a
+                    href={`https://github.com/${currentOwner}?tab=repositories`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-white transition-colors"
+                  >
+                    Repositories
+                  </a>
+                  <a
+                    href={`https://github.com/${currentOwner}?tab=stars`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-white flex items-center gap-1 transition-colors"
+                  >
+                    <Star className="h-3 w-3 fill-white/20" />
+                    <span>Stars</span>
+                  </a>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="p-6 text-center text-xs text-white/50 border border-dashed border-white/15 rounded-2xl flex flex-col items-center gap-2">
+              <GithubIcon className="h-6 w-6 text-white/30" />
+              <p>No GitHub repositories pinned yet.</p>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-neutral-200 text-black font-semibold text-xs transition-all"
               >
-                Repositories
-              </a>
-              <a
-                href={`https://github.com/${currentOwner}?tab=stars`}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-white flex items-center gap-1 transition-colors"
-              >
-                <Star className="h-3 w-3 fill-white/20" />
-                <span>Stars</span>
-              </a>
+                Add Repository
+              </button>
             </div>
-          </div>
-        </div>
-      ) : (
-        <div className="p-8 text-center text-xs text-white/50 border border-dashed border-white/15 rounded-2xl flex flex-col items-center gap-3">
-          <GithubIcon className="h-8 w-8 text-white/30" />
-          <p>No GitHub repositories pinned yet. Add your main project to get quick 1-click launchers.</p>
-          <button
-            type="button"
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black font-bold text-xs shadow-md transition-all"
-          >
-            Add Repository
-          </button>
+          )}
         </div>
       )}
 
