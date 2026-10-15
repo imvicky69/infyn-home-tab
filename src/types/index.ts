@@ -123,9 +123,14 @@ export interface UserSettings {
     clock?: boolean
     searchBar?: boolean
     github?: boolean
+    screenshots?: boolean
   }
   widgetPlacements?: Record<string, WidgetPlacement>
   screens?: DashboardScreen[]
   defaultScreenId?: string
   widgetConfigs?: Record<string, WidgetConfig>
 }
+
+// Global Chrome Extension API declaration for TypeScript
+declare const chrome: any
+

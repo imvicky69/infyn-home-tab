@@ -8,13 +8,17 @@
   },
   "permissions": [
     "storage",
-    "alarms"
+    "alarms",
+    "activeTab",
+    "scripting",
+    "unlimitedStorage"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Infyn Home Tab • Click to Start Focus Timer"
+    "default_title": "Infyn • Screenshots & Focus Timer",
+    "default_popup": "popup.html"
   },
   "icons": {
     "128": "logo.png"

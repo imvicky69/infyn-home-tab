@@ -22,6 +22,7 @@ import {
   GitBranch,
   Code2,
   Edit3,
+  Camera,
 } from 'lucide-react'
 import { GithubIcon } from './GithubWidget'
 import type {
@@ -598,6 +599,7 @@ export const CustomizeModal: React.FC<CustomizeModalProps> = ({
                       { key: 'todos', label: 'Todo Board & Checklist', desc: 'Focus goals, priorities, tags & progress tracker', icon: CheckSquare, defaultScreen: 'Productivity' },
                       { key: 'github', label: 'GitHub Projects', desc: 'Commits, actions, PRs & repo consoles', icon: GithubIcon, defaultScreen: 'Dev' },
                       { key: 'firebase', label: 'Firebase Dev Suite', desc: 'Console links and cloud project shortcuts', icon: Flame, defaultScreen: 'Dev' },
+                      { key: 'screenshots', label: 'Screenshots Gallery', desc: 'Local captures with quick copy, download & preview', icon: Camera, defaultScreen: 'Home' },
                     ].map(({ key, label, desc, icon: IconComp, defaultScreen }) => {
                       const cfg = widgetConfigs[key] || DEFAULT_WIDGET_CONFIGS[key] || { id: key, screenId: 'screen-1', size: 'normal', order: 0 }
                       const currentScreenId = cfg.screenId

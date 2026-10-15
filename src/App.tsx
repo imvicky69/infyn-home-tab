@@ -43,6 +43,7 @@ import { NotesWidget } from './components/NotesWidget'
 import { FocusTimerWidget } from './components/FocusTimerWidget'
 import { TodoListWidget } from './components/TodoListWidget'
 import { GithubWidget } from './components/GithubWidget'
+import { ScreenshotsWidget } from './components/ScreenshotsWidget'
 import { AnimatedLogo } from './components/AnimatedLogo'
 import { ClockWidget } from './components/ClockWidget'
 import { FloatingTimerOverlay } from './components/FloatingTimerOverlay'
@@ -417,6 +418,7 @@ export default function App() {
           <div className="w-full">
             <TodoListWidget
               todos={todos}
+              size={size}
               onAddTodo={handleAddTodo}
               onToggleTodo={handleToggleTodo}
               onToggleStarTodo={handleToggleStarTodo}
@@ -436,6 +438,12 @@ export default function App() {
               onRemoveRepo={handleRemoveGithubRepo}
               onUpdateRepo={handleUpdateGithubRepo}
             />
+          </div>
+        )
+      case 'screenshots':
+        return (
+          <div className="w-full">
+            <ScreenshotsWidget size={size} />
           </div>
         )
       default:
@@ -524,6 +532,8 @@ export default function App() {
         const screenWidgets = getScreenWidgets(screen.id)
         const hasShortcuts = screenWidgets.some((w) => w.key === 'shortcuts')
         const otherWidgets = screenWidgets.filter((w) => w.key !== 'shortcuts')
+        const leftWidgets = otherWidgets.filter((w) => w.key !== 'screenshots')
+        const rightWidgets = otherWidgets.filter((w) => w.key === 'screenshots')
 
         return (
           <section
@@ -532,7 +542,7 @@ export default function App() {
             ref={(el) => {
               screenRefs.current[screen.id] = el
             }}
-            className="w-full min-h-screen h-screen snap-start flex flex-col justify-between shrink-0 relative px-4 sm:px-6 py-4 z-20"
+            className="w-full min-h-screen h-screen snap-start flex flex-col justify-between shrink-0 relative px-4 sm:px-6 py-4 z-20 overflow-hidden"
           >
             {/* Top Header: Screen 1 has full search & profile, other screens have back & screen title */}
             {screenIndex === 0 ? (
@@ -682,10 +692,10 @@ export default function App() {
 
             {/* Screen Main Content */}
             {hasShortcuts ? (
-              <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-2 sm:py-4 flex flex-col md:flex-row items-center md:items-start justify-center gap-6 md:gap-8 relative z-20 transition-all duration-300">
-                {otherWidgets.length > 0 && renderOtherWidgets(otherWidgets)}
+              <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 sm:py-4 flex flex-col lg:flex-row items-center lg:items-start justify-center gap-6 relative z-20 min-h-0 overflow-y-auto no-scrollbar transition-all duration-300">
+                {leftWidgets.length > 0 && renderOtherWidgets(leftWidgets)}
                 <div className={`w-full max-w-lg flex justify-center animate-in fade-in duration-300 ${
-                  otherWidgets.length === 0 ? 'mx-auto' : ''
+                  leftWidgets.length === 0 && rightWidgets.length === 0 ? 'mx-auto' : ''
                 }`}>
                   <AppGrid
                     apps={apps}
@@ -695,9 +705,18 @@ export default function App() {
                     onReorderApps={setApps}
                   />
                 </div>
+                {rightWidgets.length > 0 && (
+                  <div className="flex flex-col items-center gap-3.5 w-full sm:w-[310px] md:w-[320px] shrink-0 animate-in fade-in duration-300">
+                    {rightWidgets.map(({ key, size }) => (
+                      <div key={key} className="w-full">
+                        {renderWidget(key, size)}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </main>
             ) : (
-              <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-center relative z-20 transition-all duration-300">
+              <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-2 sm:py-4 flex items-center justify-center relative z-20 min-h-0 overflow-y-auto no-scrollbar transition-all duration-300">
                 {screenWidgets.length > 0 ? (
                   renderGridWidgets(screenWidgets)
                 ) : (

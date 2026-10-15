@@ -308,6 +308,7 @@ export const DEFAULT_WIDGET_CONFIGS: Record<string, WidgetConfig> = {
   todos: { id: 'todos', screenId: 'screen-2', size: 'wide', order: 2 },
   github: { id: 'github', screenId: 'screen-3', size: 'normal', order: 0 },
   firebase: { id: 'firebase', screenId: 'screen-3', size: 'normal', order: 1 },
+  screenshots: { id: 'screenshots', screenId: 'screen-1', size: 'normal', order: 3 },
 }
 
 export const DEFAULT_WIDGET_PLACEMENTS: Record<string, WidgetPlacement> = {
@@ -351,6 +352,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
     quotes: false,
     clock: true,
     searchBar: true,
+    screenshots: true,
   },
   widgetPlacements: DEFAULT_WIDGET_PLACEMENTS,
   screens: DEFAULT_SCREENS,
